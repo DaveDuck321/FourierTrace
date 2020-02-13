@@ -1,3 +1,7 @@
+"""
+Tools to create fourier series
+"""
+
 import math
 from functools import partial
 from itertools import count
@@ -29,10 +33,17 @@ def cycle_coefficients():
         yield n
         yield -n
 
-def complex_period(period, sign, n, t):
+def complex_harmonic(period, sign, n, t):
     """Returns the complex exponent of the input sinusoid
     """
     return math.e ** ((2j*math.pi*sign*n*t)/period)
+
+def fourier_sum(coefficients, period, t):
+    harmonic = partial(complex_harmonic, period, 1)
+    return map(
+        lambda (n, value): value * harmonic(n, t),
+        coefficients
+    )
 
 def fourier_coefficients(f, period):
     """Returns an iterator of tuples (int, complex)
@@ -40,7 +51,7 @@ def fourier_coefficients(f, period):
     Index 1 represents the complex coefficient
     """
     for n in cycle_coefficients():
-        dot = partial(complex_period, period, -1, n)
+        dot = partial(complex_harmonic, period, -1, n)
         yield (n, 1/period * product_integral(
             f, dot, 0, period
         ))

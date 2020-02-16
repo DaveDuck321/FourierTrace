@@ -38,11 +38,22 @@ def complex_harmonic(period, sign, n, t):
     """
     return math.e ** ((2j*math.pi*sign*n*t)/period)
 
-def fourier_sum(coefficients, period, t):
+def fourier_sum(series, t):
+    """Returns an iterator of values representing each successive term in the fourier series
+    CONSUMES the series iterator
+    """
+    return map(
+        lambda term: term(t),
+        series
+    )
+
+def fourier_series(f, period):
+    """Returns an iterator of functions representing the terms in the fourier series
+    """
     harmonic = partial(complex_harmonic, period, 1)
     return map(
-        lambda (n, value): value * harmonic(n, t),
-        coefficients
+        lambda val: ( lambda t: val[1] * harmonic(val[0], t) ),
+        fourier_coefficients(f, period)
     )
 
 def fourier_coefficients(f, period):
@@ -55,8 +66,3 @@ def fourier_coefficients(f, period):
         yield (n, 1/period * product_integral(
             f, dot, 0, period
         ))
-
-if __name__ == "__main__":
-    coefficients = fourier_coefficients(math.cos, 2*math.pi)
-    for i in range(15):
-        print(next(coefficients))

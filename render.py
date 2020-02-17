@@ -11,6 +11,7 @@ import math, time
 
 
 import pygame
+from pygame import gfxdraw
 
 RENDER_RADIUS = 256
 INTERNAL_RADIUS = 2
@@ -73,12 +74,12 @@ def gen_draw_pendulum(POINTS):
             if dist < 1:
                 continue
 
-            pygame.draw.circle(screen, (0, 255, 0), screen_p, dist, 1)
-            pygame.draw.line(screen, (255, 255, 255), screen_p, screen_c)
+            pygame.gfxdraw.aacircle(screen, screen_p[0], screen_p[1], dist, (0, 255, 0))
+            pygame.draw.aaline(screen, (255, 255, 255), screen_p, screen_c)
 
         trail.append(argand_to_screen(t, accumulation[-1]))
         for p1, p2 in zip(trail, trail[1:]):
-            pygame.draw.line(screen, (0, 0, 255), p1, p2)
+            pygame.draw.aaline(screen, (0, 0, 255), p1, p2)
         
     return draw_pendulum
 

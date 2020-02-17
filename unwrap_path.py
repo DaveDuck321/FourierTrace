@@ -28,14 +28,14 @@ def points_to_polar(points):
 
 
 def linear_extrapolater(points):
-    points = list(points)
-    points.sort()
-    keys = [p[0] for p in points]
+    points = sorted(points)
     
     def extrapolate(point):
-        index = bisect_right(keys, point)
-        gradient = (points[index-1][1]-points[index][1]) / (keys[index-1]-keys[index])
-        return points[index-1][1] + gradient*(point-keys[index-1])
+        index = bisect_right(points, (point,))
+        previous, current = points[index - 1], points[index]
+
+        gradient = (previous[1]-current[1]) / (previous[0]-current[0])
+        return previous[1] + gradient*(point-previous[0])
 
     return extrapolate
 

@@ -69,7 +69,7 @@ def gen_draw_pendulum(POINTS):
             screen_p = argand_to_screen(t, p)
             screen_c = argand_to_screen(t, c)
 
-            dist = int(distance(screen_c, screen_p))
+            dist = stretch_to_screen(abs(c-p))
             if dist < 1:
                 continue
 

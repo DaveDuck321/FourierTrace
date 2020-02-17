@@ -60,7 +60,7 @@ def get_pixels(screen):
     
     plot_polar(screen, POINTS)
 
-    PATH = partial(unwrap_path.linear_extrapolate, POINTS)
+    PATH = unwrap_path.linear_extrapolater(POINTS)
     path_plot(screen, PERIOD, PATH)
 
     series = fourier_series(PATH, PERIOD)

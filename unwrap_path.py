@@ -3,6 +3,7 @@ Tools to convert cartesian coordinates to a polar path
 """
 
 from functools import partial
+from bisect import bisect_right
 
 import math
 import fourier
@@ -25,17 +26,18 @@ def points_to_polar(points):
         previousPhase = phase
         yield phase + phaseOffset, abs(point)
 
-#VERY SLOW, use bisect
-def linear_extrapolate(points, point):
-    for previous, current in zip(points, points[1:]):
-        if previous[0] <= point and current[0] >= point:
-            break
-    else:
-        print("Fallback")
-        current, previous = points[-1], points[0]
 
-    gradient = (previous[1]-current[1]) / (previous[0]-current[0])
-    return previous[1] + gradient*(point-previous[0])
+def linear_extrapolater(points):
+    points = list(points)
+    points.sort()
+    keys = [p[0] for p in points]
+    
+    def extrapolate(point):
+        index = bisect_right(keys, point)
+        gradient = (points[index-1][1]-points[index][1]) / (keys[index-1]-keys[index])
+        return points[index-1][1] + gradient*(point-keys[index-1])
+
+    return extrapolate
 
 
 if __name__ == "__main__":

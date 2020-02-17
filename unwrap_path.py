@@ -25,7 +25,7 @@ def points_to_polar(points):
         previousPhase = phase
         yield phase + phaseOffset, abs(point)
 
-
+#VERY SLOW, use bisect
 def linear_extrapolate(points, point):
     for previous, current in zip(points, points[1:]):
         if previous[0] <= point and current[0] >= point:
@@ -36,6 +36,7 @@ def linear_extrapolate(points, point):
 
     gradient = (previous[1]-current[1]) / (previous[0]-current[0])
     return previous[1] + gradient*(point-previous[0])
+
 
 if __name__ == "__main__":
     TEST_PATH = [-1-1j, -1+1j, 1+1j, 1-1j]

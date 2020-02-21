@@ -46,16 +46,23 @@ def get_pixels(POINTS):
         )
     )
 
-def gen_draw_pendulum():
+def gen_draw_pendulum(lifetime=1):
     trail = []
     def draw_pendulum(camera, accumulation):
         for p, c in zip(accumulation, accumulation[1:]):
             camera.add_shape( Line((255, 255, 255), p, c) )
-            camera.add_shape( Circle((0, 255, 0), p, abs(p-c) ) )
+            camera.add_shape( Circle((0, 255, 0), p, abs(p-c)) )
 
-        trail.append(accumulation[-1])
-        for p1, p2 in zip(trail, trail[1:]):
-            camera.add_shape( Line((0, 0, 255), p1, p2) )
+        current_t = time.time()
+        trail.append((current_t, accumulation[-1]))
+        
+        for i in range(len(trail))[::-1]:
+            if current_t - trail[i][0] > lifetime:
+                trail.pop(i)
+
+        for (created, p1), (_, p2) in zip(trail, trail[1:]):
+            intensity = 255 - int(255*(current_t-created)/ lifetime)
+            camera.add_shape( Line((0, 0, intensity), p1, p2), -created)
 
     return draw_pendulum
 
@@ -92,7 +99,7 @@ def main():
     screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
     camera = Camera(screen, RENDER_RADIUS, 2)
 
-    draw_pendulum = gen_draw_pendulum()
+    draw_pendulum = gen_draw_pendulum(6)
     radial_accumulation = gen_radial_accumulation(TEST_PATH)
 
     # Gameloop
@@ -110,8 +117,8 @@ def main():
         screen.fill((0, 0, 0))
         draw_pendulum(camera, accumulation)
 
-        camera.center = accumulation[1]
-        camera.radius = 0.5
+        camera.center = accumulation[0]
+        camera.radius = 1.5
 
         camera.flush()
         pygame.display.flip()

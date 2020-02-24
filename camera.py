@@ -14,7 +14,7 @@ class Circle(Shape):
         c = cam.point_on_surface(cam.get_local_coords(self.center))
         r = int(self.radius/cam.radius * cam._RENDER_RADIUS)
 
-        pygame.gfxdraw.aacircle(cam._surface, c[0], c[1], r, self.color)
+        pygame.gfxdraw.circle(cam._surface, c[0], c[1], r, self.color)
 
 class Line(Shape):
     def __init__(self, color, p1, p2):

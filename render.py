@@ -142,6 +142,7 @@ def main():
 
         camera.center = accumulation[focal_points[focus][0]]
 
+        camera.tick(d_time)
         camera.flush()
         pygame.display.flip()
 
@@ -152,10 +153,10 @@ def main():
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RIGHT:
                     focus = min(focus+1, len(focal_points)-1)
-                    camera.radius = focal_points[focus][1]
+                    camera.animate_radius(focal_points[focus][1])
                 if event.key == pygame.K_LEFT:
                     focus = max(0, focus-1)
-                    camera.radius = focal_points[focus][1]
+                    camera.animate_radius(focal_points[focus][1])
             if event.type == pygame.QUIT:
                 running = False
 

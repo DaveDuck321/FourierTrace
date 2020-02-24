@@ -33,8 +33,11 @@ class Camera():
         self._RENDER_RADIUS = render_radius
         self._surface = surface
 
-        self.radius = radius
         self.center = 0
+        self.radius = radius
+
+        self._target_radius = radius
+        self._animate_speed = 10
 
         self.draw_buffer = []
 
@@ -45,9 +48,15 @@ class Camera():
         coord = ((point+1+1j) * self._RENDER_RADIUS)
         return int(coord.real), int(coord.imag)
     
+    def animate_radius(self, target):
+        self._target_radius = target
+    
     def add_shape(self, shape, zindex = 0):
         self.draw_buffer.append((zindex, shape))
-    
+
+    def tick(self, dt):
+        self.radius += (self._target_radius-self.radius)*dt*self._animate_speed
+
     def flush(self):
         self.draw_buffer.sort(key = lambda i: i[0])
         while self.draw_buffer:

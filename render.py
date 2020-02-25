@@ -163,6 +163,15 @@ if __name__ == "__main__":
         TEST_PATH.append(-1-1j*n/RES)
     for n in range(-RES, RES):
         TEST_PATH.append(n/RES-1j)
+
+    for n in range(-RES, RES):
+        TEST_PATH.append(1+1j*n/RES)
+    for n in range(-RES, RES):
+        TEST_PATH.append(-n/RES+1j)
+    for n in range(-RES, RES):
+        TEST_PATH.append(-1-1j*n/RES)
+    for n in range(-RES, RES//2):
+        TEST_PATH.append(n/RES-1j)
     for n in range(-RES, RES):
         TEST_PATH.append(0.5+1j*n/RES)
         pass

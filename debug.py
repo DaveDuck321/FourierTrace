@@ -13,14 +13,18 @@ from fourier import fourier_series, fourier_sum
 import math
 
 TEST_PATH = []
-for n in range(-100, 100):
-    TEST_PATH.append(1-n/100j)
-for n in range(-100, 100):
-    TEST_PATH.append(-n/100+1j)
-for n in range(-100, 100):
-    TEST_PATH.append(-1+n/100j)
-for n in range(-100, 100):
-    TEST_PATH.append(n/100-1j)
+RES = 50
+for n in range(-RES, RES):
+    TEST_PATH.append(1+1j*n/RES)
+for n in range(-RES, RES):
+    TEST_PATH.append(-n/RES+1j)
+for n in range(-RES, RES):
+    TEST_PATH.append(-1-1j*n/RES)
+for n in range(-RES, RES):
+    TEST_PATH.append(n/RES-1j)
+for n in range(-RES, RES):
+    TEST_PATH.append(0.5+1j*n/RES)
+    pass
 
 RENDER_RADIUS = 256
 INTERNAL_RADIUS = 2
@@ -55,22 +59,23 @@ def path_plot(screen, period, path):
         screen.set_at(coords, (255, 0, 0))
 
 def get_pixels(screen):
-    POINTS = list(unwrap_path.points_to_polar(TEST_PATH))
+    OFFSET, POINTS = unwrap_path.unwrap_to_polar(TEST_PATH)
     PERIOD = max(POINTS)[0]
-    
+    print(PERIOD)
+
     plot_polar(screen, POINTS)
 
     PATH = unwrap_path.linear_extrapolater(POINTS)
     path_plot(screen, PERIOD, PATH)
 
     series = fourier_series(PATH, PERIOD)
-    terminating = list(islice(series, 20))
+    terminating = list(islice(series, 100))
 
     cartesian_gen_plot(screen, PERIOD, terminating)
 
     RESOLUTION = 1000
     return map(
-        lambda t: complex_to_screen(t, sum(fourier_sum(terminating, t))),
+        lambda t: complex_to_screen(t+OFFSET, sum(fourier_sum(terminating, t))),
         map (
             lambda n: PERIOD * n/RESOLUTION,
             range(RESOLUTION)
@@ -95,7 +100,7 @@ def main():
             if event.type == pygame.QUIT:
                 running = False
 
-    print("Hello World")
+    print("Finshed")
 
 if __name__ == "__main__":
     main()

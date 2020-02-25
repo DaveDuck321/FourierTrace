@@ -8,23 +8,42 @@ from bisect import bisect_right
 import math
 import fourier
 
-def atan3(y, x):
-    result = math.atan2(y, x)
+def complex_to_polar(z):
+    
+    result = math.atan2(z.imag, z.real)
     if result < 0:
-        return 2*math.pi + result
-    return result
+        return (2*math.pi + result, abs(z))
+        
+    return (result, abs(z))
 
 def points_to_polar(points):
-    previousPhase, phaseOffset = 0, 0
+    return map(
+        complex_to_polar,
+        points
+    )
 
-    for point in points:
-        phase = atan3(point.imag, point.real)
-        if phase < previousPhase:
-            #phaseOffset += 2*math.pi
-            pass
+def limit_positive_angle(angle):
+    if angle < 0:
+        return 2*math.pi + angle
+    return angle
 
-        previousPhase = phase
-        yield phase + phaseOffset, abs(point)
+def unwrap_to_polar(cartesian):
+    points = points_to_polar(cartesian)
+    first = next(points)
+
+    unwrapped = [(0, first[1])]
+    offset = first[0]
+    previous_phase, revolutions = 0, 0
+
+    for (phase, mag) in points:
+        phase = limit_positive_angle(phase-offset)
+        if phase < previous_phase:
+            revolutions += 1
+
+        previous_phase = phase
+        unwrapped.append((phase + 2*math.pi*revolutions, mag))
+
+    return (offset, unwrapped)
 
 
 def linear_extrapolater(points):

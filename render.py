@@ -14,7 +14,7 @@ import math, time
 import pygame
 from pygame import gfxdraw
 
-RENDER_RADIUS = 256
+RENDER_RADIUS = 512
 
 def timer():
     start = time.time()
@@ -29,7 +29,7 @@ def argand_transform(t, z):
     )
 
 def get_pixels(POINTS):
-    POINTS = list(unwrap_path.points_to_polar(POINTS))
+    POINTS = list(unwrap_path.unwrap_to_polar(POINTS))
     PERIOD = max(POINTS)[0]
 
     PATH = unwrap_path.linear_extrapolater(POINTS)
@@ -71,7 +71,7 @@ def gen_draw_pendulum(lifetime=1):
     return draw_pendulum
 
 def gen_radial_accumulation(POINTS):
-    POINTS = list(unwrap_path.points_to_polar(POINTS))
+    OFFSET, POINTS = unwrap_path.unwrap_to_polar(POINTS)
     PERIOD = max(POINTS)[0]
 
     PATH = unwrap_path.linear_extrapolater(POINTS)
@@ -102,24 +102,14 @@ def get_focal_points(accumulation):
         )
     ))
 
-def main():
-    TEST_PATH = []
-    for n in range(-100, 100):
-        TEST_PATH.append(1-n/100j)
-    for n in range(-100, 100):
-        TEST_PATH.append(-n/100+1j)
-    for n in range(-100, 100):
-        TEST_PATH.append(-1+n/100j)
-    for n in range(-100, 100):
-        TEST_PATH.append(n/100-1j)
-
+def main(path):
     # Init
     pygame.init()
     screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
     camera = Camera(screen, RENDER_RADIUS, 2)
 
-    draw_pendulum = gen_draw_pendulum(6)
-    radial_accumulation = gen_radial_accumulation(TEST_PATH)
+    draw_pendulum = gen_draw_pendulum(60)
+    radial_accumulation = gen_radial_accumulation(path)
 
     # Gameloop
     d_time = 1/60
@@ -163,4 +153,17 @@ def main():
     print("Hello World")
 
 if __name__ == "__main__":
-    main()
+    TEST_PATH = []
+    RES = 50
+    for n in range(-RES, RES):
+        TEST_PATH.append(1+1j*n/RES)
+    for n in range(-RES, RES):
+        TEST_PATH.append(-n/RES+1j)
+    for n in range(-RES, RES):
+        TEST_PATH.append(-1-1j*n/RES)
+    for n in range(-RES, RES):
+        TEST_PATH.append(n/RES-1j)
+    for n in range(-RES, RES):
+        TEST_PATH.append(0.5+1j*n/RES)
+        pass
+    main(TEST_PATH)

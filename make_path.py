@@ -2,56 +2,88 @@
 Renders a path to the screen using pygame
 """
 
-from functools import partial
-from itertools import islice
-
 import pygame
 import sys, pickle, math
 
 RENDER_RADIUS = 256
-ANGLE_INC = 0.1
+ANGLE_INC = 0.001
 
-def screen_coord(z):
+def to_screen_coord(z):
+    """Converts a complex position vector to an pixel screen coordinate
+    """
     coord = (z+1+1j)*RENDER_RADIUS
     return (
         int(coord.real),
         int(coord.imag)
     )
 
+def from_screen_coord(point):
+    """Converts a pixel screen coordinate to a complex position vector
+    """
+    return complex(
+        point[0]/ RENDER_RADIUS - 1,
+        point[1]/ RENDER_RADIUS - 1
+    )
+
+def unit_direction(angle):
+    """Returns a complex unit vector with direction specified by 'angle'
+    """
+    return complex(math.cos(angle), math.sin(angle))
+
 def dot(z1, z2):
+    """Returns the dot product of two complex position vecotrs
+    """
     return z1.real*z2.real + z1.imag*z2.imag
 
-def perp(z1):
-    return complex(z1.imag, -z1.real)
+def perpendicular(z):
+    """Returns a complex vector perpendicular to z
+    """
+    return complex(z.imag, -z.real)
 
-def draw_image(screen, image, pos, scale = (RENDER_RADIUS*2, RENDER_RADIUS*2)):
+def convert_base(base, z):
+    """Converts a complex vector into base 'base' where 'base' is a unit direction representing the new base
+    """
+    return complex(
+        dot(base, z),
+        dot(perpendicular(base), z)
+    )
+
+def draw_image(screen, image, pos, size = (RENDER_RADIUS*2, RENDER_RADIUS*2)):
+    """Draws an pygame image to the screen with position 'pos' and size 'size'
+    """
     if image is not None:
-        scaled = pygame.transform.scale(image, scale)
+        scaled = pygame.transform.scale(image, size)
         screen.blit(scaled, pos)
 
 def load_image(image_path):
+    """Returns a pygame image object with data loaded from 'image_path'
+    """
     try:
         return pygame.image.load(image_path)
     except:
         print("Could not load image", file=sys.stderr)
         return None
 
-def draw_line(screen, color, start, end):
-    start = screen_coord(start)
-    end = screen_coord(end)
+def draw_line(surface, color, offset, direction, scale):
+    """Draws a line to surface with complex vectors representing its offset, direction, and length
+    """
+    end = offset+direction*scale
+    pygame.draw.aaline(surface, color, to_screen_coord(offset), to_screen_coord(end))
 
-    pygame.draw.aaline(screen, color, start, end)
+def draw_selection_guides(screen, angle, selected):
+    """Draws a pair of lines representing the current selection's polar coordinate and its complex offset
+    """
+    direction = unit_direction(angle)
 
-def draw_guide_line(screen, angle, selected):
-    direction = complex(math.cos(angle), math.sin(angle))
-    draw_line(screen, (0, 180, 0), 0, direction*1000)
+    guide_start = selected.real * direction
+    guide_end = selected.imag * perpendicular(direction)
 
-    start_guide = direction*selected.real
-    end_guide = perp(direction) * selected.imag
+    # Draws a line representing the real polar coordinate
+    draw_line(screen, (0, 180, 0), 0, direction, 1000)
+    # Draws a line representing the imaginary component of the polar coordinate
+    draw_line(screen, (255, 0, 0), guide_start, guide_end, 1)
 
-    draw_line(screen, (255, 0, 0), start_guide, start_guide+end_guide)
-
-def main(background_path, resolution):
+def main(background_path):
     # Init
     pygame.init()
     background = load_image(background_path)
@@ -61,48 +93,43 @@ def main(background_path, resolution):
     path = []
 
     # Gameloop
-    display_background = True
-    running = True
+    running, display_background = True, True
     while running:
-        pygame.display.flip()
+        # Clears the screen
+        screen.fill((0, 0, 0))
 
         # Draw to screen
         if display_background:
             draw_image(screen, background, (0, 0))
-        draw_guide_line(screen, angle, selection)
-        for angle, point in path:
-            direction = complex(math.cos(angle), math.sin(angle))
 
-            start_guide = direction*point.real
-            end_guide = perp(direction) * point.imag
-            screen.set_at(screen_coord(start_guide+end_guide), (255, 0, 0))
-            #draw_line(screen, (255, 0, 0), start_guide, start_guide+end_guide)
+        draw_selection_guides(screen, angle, selection)
+        for angle, point in path:
+            direction = unit_direction(angle)
+
+            start_guide = point.real * direction
+            end_guide = point.imag * perpendicular(direction)
+            screen.set_at(to_screen_coord(start_guide+end_guide), (255, 0, 0))
 
         # Events
         for event in pygame.event.get():
             if (event.type == pygame.MOUSEMOTION and event.buttons[0] == 1) or (event.type == pygame.MOUSEBUTTONDOWN and event.button == 1):
-                position = complex(
-                    event.pos[0]/ RENDER_RADIUS - 1,
-                    event.pos[1]/ RENDER_RADIUS - 1
-                )
+                position = from_screen_coord(event.pos)
+
                 cursor_angle = math.atan2(position.imag, position.real) % (math.pi*2)
                 if cursor_angle > angle:
                     angle = cursor_angle
                 else:
-                    angle += resolution
+                    angle += ANGLE_INC
 
-                selection = complex(
-                    math.cos(angle)*position.real + math.sin(angle)*position.imag,
-                    math.sin(angle)*position.real - math.cos(angle)*position.imag
-                )
-                print(selection)
+                direction = unit_direction(angle)
+                selection = convert_base(direction, position)
 
                 path.append((angle, selection))
-                #path.append(position)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_h:
                     display_background = not display_background
                 if event.key == pygame.K_RETURN:
+                    # Save the whole path to out.p
                     with open("out.p", 'wb+') as out:
                         pickle.dump(path, out)
 
@@ -111,7 +138,9 @@ def main(background_path, resolution):
             if event.type == pygame.QUIT:
                 running = False
 
+        pygame.display.flip()
+
     print("Finshed")
 
 if __name__ == "__main__":
-    main(sys.argv[2], float(sys.argv[1]))
+    main(sys.argv[1])

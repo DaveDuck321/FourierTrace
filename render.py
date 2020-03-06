@@ -8,7 +8,7 @@ import unwrap_path
 
 from functools import partial
 from itertools import islice, accumulate, tee, chain
-import math, time
+import math, time, sys, pickle
 
 
 import pygame
@@ -25,24 +25,6 @@ def argand_transform(t, z):
         complex(
             z.real * math.cos(t) + z.imag * math.sin(t),
             z.real * math.sin(t) - z.imag * math.cos(t),
-        )
-    )
-
-def get_pixels(POINTS):
-    POINTS = list(unwrap_path.unwrap_to_polar(POINTS))
-    PERIOD = max(POINTS)[0]
-
-    PATH = unwrap_path.linear_extrapolater(POINTS)
-
-    series = fourier_series(PATH, PERIOD)
-    terminating = list(islice(series, 10))
-
-    RESOLUTION = 1000
-    return map(
-        lambda t: argand_to_screen(t, sum(fourier_sum(terminating, t))),
-        map (
-            lambda n: PERIOD * n/RESOLUTION,
-            range(RESOLUTION)
         )
     )
 
@@ -71,7 +53,6 @@ def gen_draw_pendulum(lifetime=1):
     return draw_pendulum
 
 def gen_radial_accumulation(POINTS):
-    OFFSET, POINTS = unwrap_path.unwrap_to_polar(POINTS)
     PERIOD = max(POINTS)[0]
 
     PATH = unwrap_path.linear_extrapolater(POINTS)
@@ -153,26 +134,6 @@ def main(path):
     print("Hello World")
 
 if __name__ == "__main__":
-    TEST_PATH = []
-    RES = 50
-    for n in range(-RES, RES):
-        TEST_PATH.append(1+1j*n/RES)
-    for n in range(-RES, RES):
-        TEST_PATH.append(-n/RES+1j)
-    for n in range(-RES, RES):
-        TEST_PATH.append(-1-1j*n/RES)
-    for n in range(-RES, RES):
-        TEST_PATH.append(n/RES-1j)
-
-    for n in range(-RES, RES):
-        TEST_PATH.append(1+1j*n/RES)
-    for n in range(-RES, RES):
-        TEST_PATH.append(-n/RES+1j)
-    for n in range(-RES, RES):
-        TEST_PATH.append(-1-1j*n/RES)
-    for n in range(-RES, RES//2):
-        TEST_PATH.append(n/RES-1j)
-    for n in range(-RES, RES):
-        TEST_PATH.append(0.5+1j*n/RES)
-        pass
-    main(TEST_PATH)
+    with open(sys.argv[1], 'rb') as file:
+        path = pickle.load(file)
+    main(path)

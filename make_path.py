@@ -18,6 +18,12 @@ def screen_coord(z):
         int(coord.imag)
     )
 
+def dot(z1, z2):
+    return z1.real*z2.real + z1.imag*z2.imag
+
+def perp(z1):
+    return complex(z1.imag, -z1.real)
+
 def draw_image(screen, image, pos, scale = (RENDER_RADIUS*2, RENDER_RADIUS*2)):
     if image is not None:
         scaled = pygame.transform.scale(image, scale)
@@ -40,27 +46,37 @@ def draw_guide_line(screen, angle, selected):
     direction = complex(math.cos(angle), math.sin(angle))
     draw_line(screen, (0, 180, 0), 0, direction*1000)
 
-    start_guide = direction*(direction.real*selected.real + direction.imag*selected.imag)
-    draw_line(screen, (255, 0, 0), start_guide, selected)
+    start_guide = direction*selected.real
+    end_guide = perp(direction) * selected.imag
 
-def main(background_path):
+    draw_line(screen, (255, 0, 0), start_guide, start_guide+end_guide)
+
+def main(background_path, resolution):
     # Init
     pygame.init()
     background = load_image(background_path)
     screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
 
-    angle_index, selection = 0, 0
+    angle, selection = 0, 0
     path = []
+
     # Gameloop
+    display_background = True
     running = True
     while running:
         pygame.display.flip()
 
         # Draw to screen
-        draw_image(screen, background, (0, 0))
-        draw_guide_line(screen, ANGLE_INC*angle_index, selection)
-        for angle, p in path:
-            screen.set_at(screen_coord(p), (0, 0, 255))
+        if display_background:
+            draw_image(screen, background, (0, 0))
+        draw_guide_line(screen, angle, selection)
+        for angle, point in path:
+            direction = complex(math.cos(angle), math.sin(angle))
+
+            start_guide = direction*point.real
+            end_guide = perp(direction) * point.imag
+            screen.set_at(screen_coord(start_guide+end_guide), (255, 0, 0))
+            #draw_line(screen, (255, 0, 0), start_guide, start_guide+end_guide)
 
         # Events
         for event in pygame.event.get():
@@ -69,19 +85,23 @@ def main(background_path):
                     event.pos[0]/ RENDER_RADIUS - 1,
                     event.pos[1]/ RENDER_RADIUS - 1
                 )
-                selection = position
+                cursor_angle = math.atan2(position.imag, position.real) % (math.pi*2)
+                if cursor_angle > angle:
+                    angle = cursor_angle
+                else:
+                    angle += resolution
+
+                selection = complex(
+                    math.cos(angle)*position.real + math.sin(angle)*position.imag,
+                    math.sin(angle)*position.real - math.cos(angle)*position.imag
+                )
+                print(selection)
+
+                path.append((angle, selection))
                 #path.append(position)
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
-                    if len(path) <= angle_index:
-                        path.append((angle_index*ANGLE_INC, selection))
-                    else:
-                        path[angle_index] = (angle_index*ANGLE_INC, selection)
-                        selection = path[angle_index+1][1]
-                    angle_index += 1
-                if event.key == pygame.K_LEFT:
-                    angle_index -= 1
-                    selection = path[angle_index][1]
+                if event.key == pygame.K_h:
+                    display_background = not display_background
                 if event.key == pygame.K_RETURN:
                     with open("out.p", 'wb+') as out:
                         pickle.dump(path, out)
@@ -94,4 +114,4 @@ def main(background_path):
     print("Finshed")
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[2], float(sys.argv[1]))

@@ -3,13 +3,6 @@ Tools to convert cartesian coordinates to a polar path
 """
 
 from bisect import bisect_right
-import math
-
-
-def limit_positive_angle(angle):
-    """ Limits an angle to the range 0 - 2*pi
-    """
-    return angle % (2*math.pi)
 
 
 def linear_extrapolater(points):

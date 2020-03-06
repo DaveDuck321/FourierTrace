@@ -4,7 +4,7 @@ Renders a path to the screen using pygame
 
 from fourier import fourier_series, fourier_sum
 from camera import Camera, Circle, Line
-import unwrap_path
+import extrapolate
 
 from functools import partial
 from itertools import islice, accumulate
@@ -62,7 +62,7 @@ def gen_draw_pendulum(lifetime=1):
 def gen_radial_accumulation(POINTS):
     PERIOD = max(POINTS)[0]
 
-    PATH = unwrap_path.linear_extrapolater(POINTS)
+    PATH = extrapolate.linear_extrapolater(POINTS)
 
     series = fourier_series(PATH, PERIOD)
     terminating = list(islice(series, 100))

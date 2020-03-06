@@ -6,6 +6,7 @@ import math
 from functools import partial
 from itertools import count
 
+
 def product_integral(f1, f2, lower, upper, steps=1000):
     """Performs a numerical integration of the product f1(t)*f2(t)
     The integral is taken between the points 'lower' and 'upper'
@@ -22,6 +23,7 @@ def product_integral(f1, f2, lower, upper, steps=1000):
         )
     ) * resolution
 
+
 def cycle_coefficients():
     """Returns an iterator in the range -inf -- +inf
     Lower frequency results are output first
@@ -33,32 +35,37 @@ def cycle_coefficients():
         yield n
         yield -n
 
+
 def complex_harmonic(period, sign, n, t):
     """Returns the complex exponent of the input sinusoid
     """
     return math.e ** ((2j*math.pi*sign*n*t)/period)
 
+
 def fourier_sum(series, t):
-    """Returns an iterator of values representing each successive term in the fourier series
-    CONSUMES the series iterator
+    """Returns an iterator of values
+    These represents each successive term in the fourier series
     """
     return map(
         lambda term: term(t),
         series
     )
 
+
 def fourier_series(f, period):
-    """Returns an iterator of functions representing the terms in the fourier series
+    """Returns an iterator of functions
+    These represent the terms in the fourier series
     """
     harmonic = partial(complex_harmonic, period, 1)
     return map(
-        lambda val: ( lambda t: val[1] * harmonic(val[0], t) ),
+        lambda val: (lambda t: val[1] * harmonic(val[0], t)),
         fourier_coefficients(f, period)
     )
 
+
 def fourier_coefficients(f, period):
     """Returns an iterator of tuples (int, complex)
-    Index 0 represents the index of this term in the Fourier series (0 is the constant term)
+    Index 0 represents the index of this term in the Fourier series
     Index 1 represents the complex coefficient
     """
     for n in cycle_coefficients():

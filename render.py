@@ -7,18 +7,22 @@ from camera import Camera, Circle, Line
 import unwrap_path
 
 from functools import partial
-from itertools import islice, accumulate, tee, chain
-import math, time, sys, pickle
+from itertools import islice, accumulate
 
+import math
+import time
+import sys
+import pickle
 
 import pygame
-from pygame import gfxdraw
 
 RENDER_RADIUS = 512
+
 
 def timer():
     start = time.time()
     return lambda: time.time()-start
+
 
 def argand_transform(t, z):
     return (
@@ -28,29 +32,32 @@ def argand_transform(t, z):
         )
     )
 
+
 def gen_draw_pendulum(lifetime=1):
     trail = []
+
     def draw_pendulum(camera, accumulation, focus):
         for p, c in zip(accumulation, accumulation[1:]):
-            camera.add_shape( Line((255, 255, 255), p, c) )
+            camera.add_shape(Line((255, 255, 255), p, c))
 
             if p == accumulation[focus]:
-                camera.add_shape( Circle((0, 255, 0), p, abs(p-c)) )
+                camera.add_shape(Circle((0, 255, 0), p, abs(p-c)))
             else:
-                camera.add_shape( Circle((0, 50, 255), p, abs(p-c)) )
+                camera.add_shape(Circle((0, 50, 255), p, abs(p-c)))
 
         current_t = time.time()
         trail.append((current_t, accumulation[-1]))
-        
+
         for i in range(len(trail))[::-1]:
             if current_t - trail[i][0] > lifetime:
                 trail.pop(i)
 
         for (created, p1), (_, p2) in zip(trail, trail[1:]):
-            intensity = 255 - int(255*(current_t-created)/ lifetime)
-            camera.add_shape( Line((intensity, 0, 0), p1, p2), -created)
+            intensity = 255 - int(255*(current_t-created) / lifetime)
+            camera.add_shape(Line((intensity, 0, 0), p1, p2), -created)
 
     return draw_pendulum
+
 
 def gen_radial_accumulation(POINTS):
     PERIOD = max(POINTS)[0]
@@ -68,6 +75,7 @@ def gen_radial_accumulation(POINTS):
 
     return radial_accumulation
 
+
 def get_focal_points(accumulation):
     local_radii = list(map(
         lambda p: abs(p[0]-p[1]),
@@ -76,12 +84,13 @@ def get_focal_points(accumulation):
     global_radii = [0]+list(accumulate(local_radii))
 
     return list(map(
-        lambda node: ( node[0], global_radii[-1]-global_radii[node[0]] ),
+        lambda node: (node[0], global_radii[-1]-global_radii[node[0]]),
         filter(
             lambda node: node[1] > 0.01,
             enumerate(local_radii)
         )
     ))
+
 
 def main(path):
     # Init
@@ -132,6 +141,7 @@ def main(path):
                 running = False
 
     print("Hello World")
+
 
 if __name__ == "__main__":
     with open(sys.argv[1], 'rb') as file:

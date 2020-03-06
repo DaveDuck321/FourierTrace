@@ -1,5 +1,6 @@
 import pygame
-from pygame import gfxdraw
+from pygame import gfxdraw # noqa
+
 
 class Shape():
     def draw(self, cam):

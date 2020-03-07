@@ -4,7 +4,6 @@ A tool for generating a path from an image
 
 import sys
 from functools import partial
-from itertools import tee
 
 from PIL import Image
 
@@ -107,13 +106,12 @@ def fill_image_data(data, start, end):
 def shortest_path(data, start, end):
     path = [start]
     while path[-1] != end:
-        s1, s2 = tee(get_surroundings(data, path[-1]))
-        path.append(min(zip(
-            map(
-                partial(get_l, data),
-                s1
-            ), s2
-        ))[1])
+        next_point = min(
+            (get_l(data, point), point)
+            for point in get_surroundings(data, path[-1])
+        )
+        path.append(next_point[1])
+
     return path
 
 

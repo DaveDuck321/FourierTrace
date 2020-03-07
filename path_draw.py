@@ -1,15 +1,16 @@
 """
-Tool for constructing a path for rendering
+A visual tool for constructing a path for rendering
 """
 
-import math
+import utils
+from path_tool import PathCreate
+
 import pickle
 import sys
 
 import pygame
 
 RENDER_RADIUS = 256
-ANGLE_INC = 0.001
 
 
 def to_screen_coord(z):
@@ -28,34 +29,6 @@ def from_screen_coord(point):
     return complex(
         point[0]/RENDER_RADIUS - 1,
         point[1]/RENDER_RADIUS - 1
-    )
-
-
-def unit_direction(angle):
-    """Returns a complex unit vector with direction specified by 'angle'
-    """
-    return complex(math.cos(angle), math.sin(angle))
-
-
-def dot(z1, z2):
-    """Returns the dot product of two complex position vecotrs
-    """
-    return z1.real*z2.real + z1.imag*z2.imag
-
-
-def perpendicular(z):
-    """Returns a complex vector perpendicular to z
-    """
-    return complex(z.imag, -z.real)
-
-
-def convert_base(base, z):
-    """Converts a complex vector into base 'base'.
-    'base' is a unit direction representing the new base
-    """
-    return complex(
-        dot(base, z),
-        dot(perpendicular(base), z)
     )
 
 
@@ -103,14 +76,15 @@ def draw_selection_guides(screen, angle, selected):
     """Draws a pair of lines representing the current selection.
     Lines show the real and imaginary components of the polar representation
     """
-    direction = unit_direction(angle)
+    direction = utils.unit_direction(angle)
 
     guide_start = selected.real * direction
-    guide_end = selected.imag * perpendicular(direction)
+    guide_end = selected.imag * utils.perpendicular(direction)
 
     # Draws a line representing the real polar coordinate
     draw_line(screen, (0, 180, 0), 0, direction, 1000)
     # Draws a line representing the imaginary component of the polar coordinate
+    # (removed)
     draw_line(screen, (255, 0, 0), guide_start, guide_end, 1)
 
 
@@ -120,8 +94,8 @@ def main(background_path):
     background = load_image(background_path)
     screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
 
-    angle, selection = 0, 0
-    path = []
+    angle, selected = 0, 0
+    path_creator = PathCreate()
 
     # Gameloop
     running, display_background = True, True
@@ -133,36 +107,26 @@ def main(background_path):
         if display_background:
             draw_image(screen, background, (0, 0))
 
-        draw_selection_guides(screen, angle, selection)
-        for angle, point in path:
-            direction = unit_direction(angle)
+        draw_selection_guides(screen, angle, selected)
+        for theta, point in path_creator.path:
+            direction = utils.unit_direction(theta)
 
             start_guide = point.real * direction
-            end_guide = point.imag * perpendicular(direction)
+            end_guide = point.imag * utils.perpendicular(direction)
             screen.set_at(to_screen_coord(start_guide+end_guide), (255, 0, 0))
 
         # Events
         for event in pygame.event.get():
-            if mouse_down_event(event):
+            if mouse_down_event(event, pygame.BUTTON_LEFT):
                 pos = from_screen_coord(event.pos)
-
-                cursor_angle = math.atan2(pos.imag, pos.real) % (math.pi*2)
-                if cursor_angle > angle:
-                    angle = cursor_angle
-                else:
-                    angle += ANGLE_INC
-
-                direction = unit_direction(angle)
-                selection = convert_base(direction, pos)
-
-                path.append((angle, selection))
+                angle, selected = path_creator.add_point(pos)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_h:
                     display_background = not display_background
                 if event.key == pygame.K_RETURN:
                     # Save the whole path to out.p
                     with open("out.p", 'wb+') as out:
-                        pickle.dump(path, out)
+                        pickle.dump(path_creator.path, out)
 
                     running = False
 

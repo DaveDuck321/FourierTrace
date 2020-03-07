@@ -2,9 +2,12 @@
 A tool for generating a path from an image
 """
 
-import sys
-from functools import partial
+import utils
+from path_tool import PathCreate
 
+import sys
+import pickle
+from functools import partial
 from PIL import Image
 
 BIG_NUMBER = (1 << 32)
@@ -66,7 +69,7 @@ def get_image_data(image_path):
             else:
                 row.append(BIG_NUMBER)
         data.append(row)
-    return data
+    return data, (width, height)
 
 
 def gen_start_end(data):
@@ -123,10 +126,22 @@ def show_path(path, size):
     im.show()
 
 
+def save_path(path, size, file_path):
+    creator = PathCreate()
+    coord_convert = partial(utils.from_vector_coord, (size[0]//2, size[1]//2))
+
+    for pixel in path[::-1]:
+        creator.add_point(coord_convert(pixel))
+
+    with open(file_path, 'wb+') as file:
+        pickle.dump(creator.path, file)
+
+
 if __name__ == "__main__":
-    data = get_image_data(sys.argv[1])
+    data, size = get_image_data(sys.argv[1])
     start, end = gen_start_end(data)
     fill_image_data(data, start, end)
 
     path = shortest_path(data, start, end)
-    show_path(path, (len(data[0]), len(data)))
+    show_path(path, size)
+    save_path(path, size, "out.p")

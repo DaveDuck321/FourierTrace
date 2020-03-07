@@ -5,6 +5,15 @@ Some complex vector math utils
 import math
 
 
+def from_vector_coord(size, point):
+    """Converts a pixel screen coordinate to a complex position vector
+    """
+    return complex(
+        point[0]/size[0] - 1,
+        point[1]/size[1] - 1
+    )
+
+
 def unit_direction(angle):
     """Returns a complex unit vector with direction specified by 'angle'
     """

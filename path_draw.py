@@ -4,6 +4,7 @@ A visual tool for constructing a path for rendering
 
 import utils
 from path_tool import PathCreate
+from functools import partial
 
 import pickle
 import sys
@@ -11,6 +12,10 @@ import sys
 import pygame
 
 RENDER_RADIUS = 256
+from_screen_coord = partial(
+    utils.from_vector_coord,
+    (RENDER_RADIUS, RENDER_RADIUS)
+)
 
 
 def to_screen_coord(z):
@@ -20,15 +25,6 @@ def to_screen_coord(z):
     return (
         int(coord.real),
         int(coord.imag)
-    )
-
-
-def from_screen_coord(point):
-    """Converts a pixel screen coordinate to a complex position vector
-    """
-    return complex(
-        point[0]/RENDER_RADIUS - 1,
-        point[1]/RENDER_RADIUS - 1
     )
 
 
@@ -118,7 +114,7 @@ def main(background_path):
         # Events
         for event in pygame.event.get():
             if mouse_down_event(event, pygame.BUTTON_LEFT):
-                pos = from_screen_coord(event.pos)
+                pos = utils.from_vector_coord(event.pos)
                 angle, selected = path_creator.add_point(pos)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_h:

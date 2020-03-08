@@ -1,9 +1,8 @@
-import pygame
-from pygame import gfxdraw # noqa
-
+import pyglet
+from collections import defaultdict
 
 class Shape():
-    def draw(self, cam):
+    def draw(self, batch):
         raise Exception("NotImplementedException")
 
 
@@ -13,11 +12,19 @@ class Circle(Shape):
         self.center = center
         self.radius = radius
 
-    def draw(self, cam):
+    def draw(self, cam, batch):
         c = cam.point_on_surface(cam.get_local(self.center))
         r = int(self.radius/cam.radius * cam._RENDER_RADIUS)
 
-        pygame.gfxdraw.circle(cam._surface, c[0], c[1], r, self.color)
+        # TODO: Circle render
+        """
+        batch.add(
+            4,
+            pyglet.gl.GL_LINES,
+            None,
+            ('v2i', (c[0]-r, c[1]-r, c[0]-r, c[1]+r, c[0]+r, c[1]+r, c[0]+r, c[1]-r)),
+            ('c3B', (*self.color, *self.color, *self.color, *self.color))
+        )"""
 
 
 class Line(Shape):
@@ -26,17 +33,22 @@ class Line(Shape):
         self.p1 = p1
         self.p2 = p2
 
-    def draw(self, cam):
+    def draw(self, cam, batch):
         local1, local2 = cam.get_local(self.p1), cam.get_local(self.p2)
         p1, p2 = cam.point_on_surface(local1), cam.point_on_surface(local2)
 
-        pygame.draw.aaline(cam._surface, self.color, p1, p2)
+        batch.add(
+            2,
+            pyglet.gl.GL_LINES,
+            None,
+            ('v2i', (p1[0], p1[1], p2[0], p2[1])),
+            ('c3B', (*self.color, *self.color))
+        )
 
 
 class Camera():
-    def __init__(self, surface, render_radius, radius=1):
+    def __init__(self, render_radius, radius=1):
         self._RENDER_RADIUS = render_radius
-        self._surface = surface
 
         self.center = 0
         self.radius = radius
@@ -56,13 +68,14 @@ class Camera():
     def animate_radius(self, target):
         self._target_radius = target
 
-    def add_shape(self, shape, zindex=0):
-        self.draw_buffer.append((zindex, shape))
+    def add_shape(self, shape):
+        self.draw_buffer.append(shape)
 
     def tick(self, dt):
         self.radius += (self._target_radius-self.radius)*dt*self._animate_speed
 
     def flush(self):
-        self.draw_buffer.sort(key=lambda i: i[0])
+        batch = pyglet.graphics.Batch()
         while self.draw_buffer:
-            self.draw_buffer.pop()[1].draw(self)
+            self.draw_buffer.pop().draw(self, batch)
+        batch.draw()

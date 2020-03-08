@@ -14,14 +14,11 @@ import time
 import sys
 import pickle
 
-import pygame
+import pyglet
+from pyglet import window
+from pyglet.window import key
 
 RENDER_RADIUS = 512
-
-
-def timer():
-    start = time.time()
-    return lambda: time.time()-start
 
 
 def argand_transform(t, z):
@@ -33,39 +30,13 @@ def argand_transform(t, z):
     )
 
 
-def gen_draw_pendulum(lifetime=1):
-    trail = []
-
-    def draw_pendulum(camera, accumulation, focus):
-        for p, c in zip(accumulation, accumulation[1:]):
-            camera.add_shape(Line((255, 255, 255), p, c))
-
-            if p == accumulation[focus]:
-                camera.add_shape(Circle((0, 255, 0), p, abs(p-c)))
-            else:
-                camera.add_shape(Circle((0, 50, 255), p, abs(p-c)))
-
-        current_t = time.time()
-        trail.append((current_t, accumulation[-1]))
-
-        for i in range(len(trail))[::-1]:
-            if current_t - trail[i][0] > lifetime:
-                trail.pop(i)
-
-        for (created, p1), (_, p2) in zip(trail, trail[1:]):
-            intensity = 255 - int(255*(current_t-created) / lifetime)
-            camera.add_shape(Line((intensity, 0, 0), p1, p2), -created)
-
-    return draw_pendulum
-
-
 def gen_radial_accumulation(POINTS):
     PERIOD = 2*math.pi * (max(POINTS)[0]//(2*math.pi) + 1)
 
     PATH = extrapolate.linear_extrapolater(POINTS)
 
     series = fourier_series(PATH, PERIOD)
-    terminating = list(islice(series, 100))
+    terminating = list(islice(series, 1000))
 
     def radial_accumulation(t):
         return [0]+list(map(
@@ -92,58 +63,73 @@ def get_focal_points(accumulation):
     ))
 
 
-def main(path):
-    # Init
-    pygame.init()
-    screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
-    camera = Camera(screen, RENDER_RADIUS, 2)
+class Controller(pyglet.window.Window):
+    def __init__(self, path, **argv):
+        super(Controller, self).__init__(
+            RENDER_RADIUS*2,
+            RENDER_RADIUS*2,
+            **argv
+        )
 
-    draw_pendulum = gen_draw_pendulum(60)
-    radial_accumulation = gen_radial_accumulation(path)
+        self.trail = []
 
-    # Gameloop
-    d_time = 1/60
-    running = True
+        self.rotation = 0
+        self.focus = 0
 
-    focus = 0
-    focal_points = get_focal_points(radial_accumulation(0))
+        self.camera = Camera(RENDER_RADIUS, 2)
 
-    rotation = 0
-    while running:
-        # Frame logic
-        t = timer()
-        # Dilate time while zoomed in -- match rotation speed
-        rotation += d_time / ((focus+3)//2)
-        accumulation = radial_accumulation(rotation)
+        self.radial_accumulation = gen_radial_accumulation(path)
+        self.focal_points = get_focal_points(self.radial_accumulation(0))
 
-        # Drawing
-        screen.fill((0, 0, 0))
-        draw_pendulum(camera, accumulation, focal_points[focus][0])
+        pyglet.clock.schedule_interval(self.on_update, 1/60)
 
-        camera.center = accumulation[focal_points[focus][0]]
+    def on_update(self, dt):
+        self.rotation += dt / ((self.focus+3)//2)
+        self.camera.tick(dt)
 
-        camera.tick(d_time)
-        camera.flush()
-        pygame.display.flip()
+    def on_draw(self):
+        self.clear()
 
-        # Timing
-        d_time = t()
-        # Events
-        for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RIGHT:
-                    focus = min(focus+1, len(focal_points)-1)
-                    camera.animate_radius(focal_points[focus][1])
-                if event.key == pygame.K_LEFT:
-                    focus = max(0, focus-1)
-                    camera.animate_radius(focal_points[focus][1])
-            if event.type == pygame.QUIT:
-                running = False
+        accumulation = self.radial_accumulation(self.rotation)
+        self.draw_pendulum(accumulation)
 
-    print("Hello World")
+        self.camera.center = accumulation[self.focal_points[self.focus][0]]
+
+        self.camera.flush()
+
+    def on_key_press(self, symbol, modifiers):
+        if symbol == key.RIGHT:
+            self.move_focus(1)
+        if symbol == key.LEFT:
+            self.move_focus(-1)
+
+    def move_focus(self, direction):
+        self.focus = max(0, min(self.focus+direction, len(self.focal_points)-1))
+        self.camera.animate_radius(self.focal_points[self.focus][1])
+
+    def draw_pendulum(self, accumulation):
+        for p, c in zip(accumulation, accumulation[1:]):
+            self.camera.add_shape(Line((255, 255, 255), p, c))
+
+            if p == accumulation[self.focal_points[self.focus][0]]:
+                self.camera.add_shape(Circle((0, 255, 0), p, abs(p-c)))
+            else:
+                self.camera.add_shape(Circle((0, 50, 255), p, abs(p-c)))
+
+        current_t = time.time()
+        self.trail.append((current_t, accumulation[-1]))
+
+        for i in range(len(self.trail))[::-1]:
+            if current_t - self.trail[i][0] > 1000:
+                self.trail.pop(i)
+
+        for (created, p1), (_, p2) in zip(self.trail, self.trail[1:]):
+            intensity = 255 - int(255*(current_t-created) / 1000)
+            self.camera.add_shape(Line((intensity, 0, 0), p1, p2))
 
 
 if __name__ == "__main__":
+    config = pyglet.gl.Config(sample_buffers=1, samples=4)
     with open(sys.argv[1], 'rb') as file:
-        path = pickle.load(file)
-    main(path)
+        window = Controller(pickle.load(file), config=config)
+    pyglet.app.run()

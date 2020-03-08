@@ -14,17 +14,23 @@ class PathCreate():
         self.angle = 0
         self.path = []
 
+    def revolutions(self):
+        return self.angle//(2*math.pi)
+
+    def phase(self):
+        return self.angle % (2*math.pi)
+
     def add_point(self, point):
         """Adds a complex vector to the path
         Returns the angle and complex value of new the path vector
         """
         point_angle = math.atan2(point.imag, point.real) % (math.pi*2)
-        if point_angle > self.angle:
-            self.angle = point_angle
+        if point_angle > self.phase():
+            self.angle = point_angle + 2*math.pi * self.revolutions()
         else:
             self.angle += ANGLE_INC
 
-        direction = utils.unit_direction(self.angle)
+        direction = utils.unit_direction(self.phase())
         selection = utils.convert_base(direction, point)
 
         self.path.append((self.angle, selection))

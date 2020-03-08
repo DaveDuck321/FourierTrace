@@ -60,7 +60,7 @@ def gen_draw_pendulum(lifetime=1):
 
 
 def gen_radial_accumulation(POINTS):
-    PERIOD = max(POINTS)[0]
+    PERIOD = 2*math.pi * (max(POINTS)[0]//(2*math.pi) + 1)
 
     PATH = extrapolate.linear_extrapolater(POINTS)
 

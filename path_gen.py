@@ -117,8 +117,12 @@ def shortest_path(data):
 def show_path(path, size):
     im = Image.new('RGB', size)
     data = im.load()
-    for pixel in path:
+
+    data[path[0]] = (255, 0, 0)
+    data[path[-1]] = (0, 0, 255)
+    for pixel in path[1:-1]:
         data[pixel] = (255, 255, 255)
+    data[size[0]//2, size[1]//2] = (255, 255, 255)
     im.show()
 
 
@@ -126,7 +130,7 @@ def save_path(path, size, file_path):
     creator = PathCreate()
     coord_convert = partial(utils.from_vector_coord, (size[0]//2, size[1]//2))
 
-    for pixel in path[::-1]:
+    for pixel in path:
         creator.add_point(coord_convert(pixel))
 
     with open(file_path, 'wb+') as file:

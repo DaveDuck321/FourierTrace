@@ -114,7 +114,7 @@ def main(background_path):
         # Events
         for event in pygame.event.get():
             if mouse_down_event(event, pygame.BUTTON_LEFT):
-                pos = utils.from_vector_coord(event.pos)
+                pos = from_screen_coord(event.pos)
                 angle, selected = path_creator.add_point(pos)
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_h:

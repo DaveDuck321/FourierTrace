@@ -20,6 +20,15 @@ def unit_direction(angle):
     return complex(math.cos(angle), math.sin(angle))
 
 
+def add(*args):
+    """Returns the sum of the unput 2d turple vectors
+    """
+    out = (0, 0)
+    for vec in args:
+        out = (out[0] + vec[0], out[1] + vec[1])
+    return out
+
+
 def dot(z1, z2):
     """Returns the dot product of two complex position vecotrs
     """

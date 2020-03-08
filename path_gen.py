@@ -10,108 +10,104 @@ import pickle
 from functools import partial
 from PIL import Image
 
+BLANK_COLOR = (255, 255, 255)
+START_COLOR = (255, 0, 0)
+END_COLOR = (0, 0, 255)
+
 BIG_NUMBER = (1 << 32)
 SCAN_OFFSETS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
 
-def add(v1, v2):
-    return (v1[0]+v2[0], v1[1]+v2[1])
+class ImageData():
+    """A container for storing the data extracted from the path image
+    """
+    def __init__(self, size):
+        self.start, self.end = None, None
+        self.size = size
+        self.data = [[BIG_NUMBER]*size[1] for _ in range(size[0])]
 
+    def __setitem__(self, index, value):
+        try:
+            self.data[index[1]][index[0]] = value
+        except IndexError:
+            # Out of bounds, ignore write
+            # print("Index set error")
+            pass
 
-def get_l(data, point):
-    try:
-        return data[point[1]][point[0]]
-    except IndexError:
-        # Default value used, no need for bound checking
-        print("Index get error")
-        return BIG_NUMBER
-
-
-def set_l(data, point, l):
-    try:
-        data[point[1]][point[0]] = l
-    except IndexError:
-        # Out of bounds, ignore write
-        print("Index set error")
-        pass
+    def __getitem__(self, index):
+        try:
+            return self.data[index[1]][index[0]]
+        except IndexError:
+            # Default value used, no need for bound checking
+            return BIG_NUMBER
 
 
 def get_surroundings(data, point):
     return map(
-        partial(add, point),
+        partial(utils.add, point),
         SCAN_OFFSETS
     )
 
 
-def get_empty_surroundings(data, point):
+def filter_surroundings(data, point, condition=(lambda x: x is not None)):
     return filter(
-        lambda pos: get_l(data, pos) is None,
+        lambda pos: condition(data[pos]),
         get_surroundings(data, point)
     )
 
 
-def is_black(color):
-    return color[0] != 255 and color[1] != 255 and color[2] != 255
+def is_color(c1, c2, delta=50):
+    return (abs(c1[0]-c2[0]) < delta) and (
+        abs(c1[1]-c2[1]) < delta) and (
+            abs(c1[2]-c2[2]) < delta)
 
 
 def get_image_data(image_path):
-    im = Image.open(image_path)
+    im = Image.open(image_path).convert("RGB")
 
     width, height = im.size
     pixels = im.load()
-
-    data = []
+    data = ImageData(im.size)
     for y in range(height):
-        row = []
         for x in range(width):
-            if is_black(pixels[x, y]):
-                row.append(None)
-            else:
-                row.append(BIG_NUMBER)
-        data.append(row)
-    return data, (width, height)
+            if is_color(pixels[x, y], BLANK_COLOR):
+                continue
+
+            data[x, y] = None
+            if is_color(pixels[x, y], START_COLOR):
+                data.start = (x, y)
+                print(f"Path start: {data.start}")
+            if is_color(pixels[x, y], END_COLOR):
+                data.end = (x, y)
+                print(f"Path end: {data.end}")
+    return data
 
 
-def gen_start_end(data):
-    CENTER = (len(data[0])//2, len(data)//2)
-    # Clear center line to prevent 0 length path
-    # Also find max and min x+y
-    for n in range(CENTER[0]):
-        point = add(CENTER, (n, 0))
-        set_l(data, point, BIG_NUMBER)
-
-        if get_l(data, add(point, (0, -1))) is None:
-            start = add(point, (0, -1))
-        if get_l(data, add(point, (0, 1))) is None:
-            end = add(point, (0, 1))
-    return start, end
-
-
-def fill_image_data(data, start, end):
-    set_l(data, end, 0)
+def fill_image_data(data):
+    data[data.end] = 0
 
     next_queue = []
-    queue = [(0, end)]
+    queue = [(0, data.end)]
     while queue:
         while queue:
             cost, coord = queue.pop()
-            if coord == start:
+            if coord == data.start:
                 return
 
-            for point in get_empty_surroundings(data, coord):
-                set_l(data, point, cost+1)
+            for point in filter_surroundings(data, coord, lambda x: x is None):
+                data[point] = cost+1
                 next_queue.append((cost+1, point))
 
         queue = next_queue
         next_queue = []
 
 
-def shortest_path(data, start, end):
-    path = [start]
-    while path[-1] != end:
+def shortest_path(data):
+    path = [data.start]
+    while path[-1] != data.end:
         next_point = min(
-            (get_l(data, point), point)
-            for point in get_surroundings(data, path[-1])
+            (data[point], point)
+            for point in filter_surroundings(data, path[-1])
         )
         path.append(next_point[1])
 
@@ -138,10 +134,9 @@ def save_path(path, size, file_path):
 
 
 if __name__ == "__main__":
-    data, size = get_image_data(sys.argv[1])
-    start, end = gen_start_end(data)
-    fill_image_data(data, start, end)
+    data = get_image_data(sys.argv[1])
+    fill_image_data(data)
 
-    path = shortest_path(data, start, end)
-    show_path(path, size)
-    save_path(path, size, "out.p")
+    path = shortest_path(data)
+    show_path(path, data.size)
+    save_path(path, data.size, "out.p")

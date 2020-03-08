@@ -21,7 +21,7 @@ def unit_direction(angle):
 
 
 def add(*args):
-    """Returns the sum of the unput 2d turple vectors
+    """Returns the sum of the 2d input tuple vectors
     """
     out = (0, 0)
     for vec in args:

@@ -65,7 +65,7 @@ def gen_radial_accumulation(POINTS):
     PATH = extrapolate.linear_extrapolater(POINTS)
 
     series = fourier_series(PATH, PERIOD)
-    terminating = list(islice(series, 100))
+    terminating = list(islice(series, 1000))
 
     def radial_accumulation(t):
         return [0]+list(map(

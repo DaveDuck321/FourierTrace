@@ -18,15 +18,19 @@ class PathCreate():
         return self.angle//(2*math.pi)
 
     def phase(self):
-        return self.angle % (2*math.pi)
+        return utils.phase(self.angle)
 
     def add_point(self, point):
         """Adds a complex vector to the path
         Returns the angle and complex value of new the path vector
         """
         point_angle = math.atan2(point.imag, point.real) % (math.pi*2)
-        if point_angle > self.phase():
-            self.angle = point_angle + 2*math.pi * self.revolutions()
+        if utils.is_lagging(self.angle, point_angle):
+            new_angle = point_angle + 2*math.pi * self.revolutions()
+
+            if new_angle < self.angle:
+                new_angle += 2*math.pi
+            self.angle = new_angle
         else:
             self.angle += ANGLE_INC
 

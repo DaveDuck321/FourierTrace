@@ -20,6 +20,22 @@ def unit_direction(angle):
     return complex(math.cos(angle), math.sin(angle))
 
 
+def phase(angle):
+    """Returns the phase of an angle
+    """
+    return angle % (2*math.pi)
+
+
+def is_lagging(a1, a2):
+    """Returns True if phase a1 is lagging a2 (measured in radians)
+    """
+    # If phase is around 0 rads, translate it for proper comparison
+    if 0.5*math.pi < phase(a1) < 1.5*math.pi:
+        return phase(a1) < phase(a2)
+
+    return phase(a1 - math.pi) < phase(a2 - math.pi)
+
+
 def add(*args):
     """Returns the sum of the 2d input tuple vectors
     """

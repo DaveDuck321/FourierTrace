@@ -6,6 +6,8 @@ Converts a series of argand vectors into their corresponding complex polar path
 import utils
 import math
 
+# Contant, experimentally determined
+# Small values can produce more complex shapes but converge slowly
 ANGLE_INC = 0.001
 
 
@@ -15,9 +17,13 @@ class PathCreate():
         self.path = []
 
     def revolutions(self):
+        """Returns the number of revolutions required to produce the current path
+        """
         return self.angle//(2*math.pi)
 
     def phase(self):
+        """Returns the current phase of the cursor
+        """
         return utils.phase(self.angle)
 
     def add_point(self, point):

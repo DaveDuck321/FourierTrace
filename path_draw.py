@@ -12,6 +12,8 @@ import sys
 import pygame
 
 RENDER_RADIUS = 256
+
+# Coverts a screen coordinate to its complex representation
 from_screen_coord = partial(
     utils.from_vector_coord,
     (RENDER_RADIUS, RENDER_RADIUS)
@@ -103,7 +105,10 @@ def main(background_path):
         if display_background:
             draw_image(screen, background, (0, 0))
 
+        # Draws the debug selection guides
         draw_selection_guides(screen, angle, selected)
+
+        # Draws the current path onto the screen
         for theta, point in path_creator.path:
             direction = utils.unit_direction(theta)
 

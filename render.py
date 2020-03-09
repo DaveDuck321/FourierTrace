@@ -7,7 +7,7 @@ from camera import Camera, Circle, Line
 import extrapolate
 
 from functools import partial
-from itertools import islice, accumulate
+from itertools import islice, accumulate, count, tee
 
 import math
 import time
@@ -25,6 +25,8 @@ def timer():
 
 
 def argand_transform(t, z):
+    """Returns an argand point representing a complex polar coordinate at angle t
+    """
     return (
         complex(
             z.real * math.cos(t) + z.imag * math.sin(t),
@@ -34,9 +36,13 @@ def argand_transform(t, z):
 
 
 def gen_draw_pendulum(lifetime=1):
+    """Returns a function that plots the array of pendulums and a point trail
+    """
     trail = []
 
     def draw_pendulum(camera, accumulation, focus):
+        """Plots the pendulums representing the current fourier accumulation
+        """
         for p, c in zip(accumulation, accumulation[1:]):
             camera.add_shape(Line((255, 255, 255), p, c))
 
@@ -59,13 +65,16 @@ def gen_draw_pendulum(lifetime=1):
     return draw_pendulum
 
 
-def gen_radial_accumulation(POINTS):
+def gen_radial_accumulation(POINTS, n=200):
+    """Calculates fourier coefficients and returns an expansion function
+    This generate a fourier accumulation at a given angle with 'n' terms
+    """
     PERIOD = 2*math.pi * (max(POINTS)[0]//(2*math.pi) + 1)
 
     PATH = extrapolate.linear_extrapolater(POINTS)
 
     series = fourier_series(PATH, PERIOD)
-    terminating = list(islice(series, 1000))
+    terminating = list(islice(series, n))
 
     def radial_accumulation(t):
         return [0]+list(map(
@@ -77,19 +86,32 @@ def gen_radial_accumulation(POINTS):
 
 
 def get_focal_points(accumulation):
-    local_radii = list(map(
-        lambda p: abs(p[0]-p[1]),
-        zip(accumulation, accumulation[1:])
-    ))
-    global_radii = [0]+list(accumulate(local_radii))
-
-    return list(map(
-        lambda node: (node[0], global_radii[-1]-global_radii[node[0]]),
-        filter(
-            lambda node: node[1] > 0.01,
-            enumerate(local_radii)
+    """Returns a list of coefficient indexes and their outer_radius.
+    These significantly contribute to the overall shape.
+    """
+    global_radii = [0]+list(accumulate(
+        map(
+            lambda p: abs(p[0]-p[1]),
+            zip(accumulation, accumulation[1:])
         )
     ))
+
+    # A pair of iterators representing the radius of the expansion at each term
+    outer_radii = tee(map(
+        lambda radii: global_radii[-1] - radii,
+        global_radii
+    ))
+    # Skip the first term, so zip() can alternate values
+    next(outer_radii[1])
+
+    # Returns a list of the index and outer radius of each term
+    # Filter removes terms that dont make a significant contribution to radius
+    return list(
+        filter(
+            lambda val: val[1]*0.98 > val[2],
+            zip(count(), *outer_radii)
+        )
+    )
 
 
 def main(path):
@@ -139,8 +161,6 @@ def main(path):
                     camera.animate_radius(focal_points[focus][1])
             if event.type == pygame.QUIT:
                 running = False
-
-    print("Hello World")
 
 
 if __name__ == "__main__":

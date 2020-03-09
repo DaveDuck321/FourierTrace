@@ -10,11 +10,14 @@ import pickle
 from functools import partial
 from PIL import Image
 
+# The significant colors on the image
 BLANK_COLOR = (255, 255, 255)
 START_COLOR = (255, 0, 0)
 END_COLOR = (0, 0, 255)
 
+# A large constant for path finding
 BIG_NUMBER = (1 << 32)
+# The pixels around (0, 0) to scan while path finding
 SCAN_OFFSETS = [(0, 1), (0, -1), (1, 0), (-1, 0)]
 
 
@@ -43,6 +46,8 @@ class ImageData():
 
 
 def get_surroundings(data, point):
+    """Returns an iterator of the surrounding coordinates
+    """
     return map(
         partial(utils.add, point),
         SCAN_OFFSETS
@@ -50,6 +55,9 @@ def get_surroundings(data, point):
 
 
 def filter_surroundings(data, point, condition=(lambda x: x is not None)):
+    """Returns an iterator of the surrounding coordinates where 'condition' is True
+    Condition is a function that accept the value of the surrounding cell
+    """
     return filter(
         lambda pos: condition(data[pos]),
         get_surroundings(data, point)
@@ -57,12 +65,16 @@ def filter_surroundings(data, point, condition=(lambda x: x is not None)):
 
 
 def is_color(c1, c2, delta=50):
+    """Returns True if the color tuple 'c1' matches 'c2' within a leeway 'delta'
+    """
     return (abs(c1[0]-c2[0]) < delta) and (
         abs(c1[1]-c2[1]) < delta) and (
             abs(c1[2]-c2[2]) < delta)
 
 
 def get_image_data(image_path):
+    """Converts an image with path 'image_path' to and ImageData object
+    """
     im = Image.open(image_path).convert("RGB")
 
     width, height = im.size
@@ -84,6 +96,9 @@ def get_image_data(image_path):
 
 
 def fill_image_data(data):
+    """Finds the shortest path length between each point and the end point
+    MUTATES the ImageData input object
+    """
     data[data.end] = 0
 
     next_queue = []
@@ -103,6 +118,9 @@ def fill_image_data(data):
 
 
 def shortest_path(data):
+    """Returns a list of coordinate tuples. 'data' is of type ImageData
+    These represent the shortest path between 'start' and 'end'
+    """
     path = [data.start]
     while path[-1] != data.end:
         next_point = min(
@@ -115,6 +133,9 @@ def shortest_path(data):
 
 
 def show_path(path, size):
+    """Uses Pillow to display a visual representation of the path.
+    'path' is a list of coordinate tuples
+    """
     im = Image.new('RGB', size)
     data = im.load()
 
@@ -127,6 +148,9 @@ def show_path(path, size):
 
 
 def save_path(path, size, file_path):
+    """Uses Pillow to display a visual representation of the path.
+    'path' is a list of coordinate tuples
+    """
     creator = PathCreate()
     coord_convert = partial(utils.from_vector_coord, (size[0]//2, size[1]//2))
 

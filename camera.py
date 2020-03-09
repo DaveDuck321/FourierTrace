@@ -17,7 +17,7 @@ class Circle(Shape):
         c = cam.point_on_surface(cam.get_local(self.center))
         r = int(self.radius/cam.radius * cam._RENDER_RADIUS)
 
-        pygame.gfxdraw.circle(cam._surface, c[0], c[1], r, self.color)
+        pygame.gfxdraw.circle(cam._surface, *c, r, self.color)
 
 
 class Line(Shape):
@@ -30,7 +30,7 @@ class Line(Shape):
         local1, local2 = cam.get_local(self.p1), cam.get_local(self.p2)
         p1, p2 = cam.point_on_surface(local1), cam.point_on_surface(local2)
 
-        pygame.draw.aaline(cam._surface, self.color, p1, p2)
+        pygame.gfxdraw.line(cam._surface, *p1, *p2, self.color)
 
 
 class Camera():

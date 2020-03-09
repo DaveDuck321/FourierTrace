@@ -43,13 +43,16 @@ def gen_draw_pendulum(lifetime=1):
     def draw_pendulum(camera, accumulation, focus):
         """Plots the pendulums representing the current fourier accumulation
         """
-        for p, c in zip(accumulation, accumulation[1:]):
-            camera.add_shape(Line((255, 255, 255), p, c))
+        for index, (p, c) in enumerate(zip(accumulation, accumulation[1:])):
+            circle_color = (0, 50, 255, max(255-abs(index-focus)**2, 30))
+            line_color = (255, 255, 255, 30)
 
-            if p == accumulation[focus]:
-                camera.add_shape(Circle((0, 255, 0), p, abs(p-c)))
-            else:
-                camera.add_shape(Circle((0, 50, 255), p, abs(p-c)))
+            if index == focus:
+                circle_color = (0, 255, 0)
+                line_color = (255, 255, 255)
+
+            camera.add_shape(Circle(circle_color, p, abs(p-c)))
+            camera.add_shape(Line(line_color, p, c))
 
         current_t = time.time()
         trail.append((current_t, accumulation[-1]))

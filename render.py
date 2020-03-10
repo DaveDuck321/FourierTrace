@@ -45,7 +45,7 @@ def gen_draw_pendulum(lifetime=1):
         """
         for index, (p, c) in enumerate(zip(accumulation, accumulation[1:])):
             circle_color = (0, 50, 255, max(255-abs(index-focus)**2, 30))
-            line_color = (255, 255, 255, 30)
+            line_color = (255, 255, 255, 50)
 
             if index == focus:
                 circle_color = (0, 255, 0)
@@ -102,7 +102,7 @@ def get_focal_points(accumulation):
 
     # A pair of iterators representing the radius of the expansion at each term
     outer_radii = tee(map(
-        lambda radii: global_radii[-1] - radii,
+        lambda radii: (global_radii[-1] - radii)/2,
         global_radii
     ))
     # Skip the first term, so zip() can alternate values
@@ -112,10 +112,26 @@ def get_focal_points(accumulation):
     # Filter removes terms that dont make a significant contribution to radius
     return list(
         filter(
-            lambda val: val[1]*0.98 > val[2],
+            lambda val: val[1]*0.99 > val[2],
             zip(count(), *outer_radii)
         )
     )
+
+
+def is_key_held(keys_down, key, hold_delay=0.2):
+    """Return True if 'key' is currently held down.
+    There is a delay of 'hold_delay' seconds after a key is initially pressed
+    """
+    return key in keys_down and time.time() - keys_down[key] > hold_delay
+
+
+def update_focus(camera, focal_points, focus, direction):
+    """Returns the new focus index and updates the camera's focus.
+    Diection is a signed integer representing the sign of this change
+    """
+    focus = max(0, min(focus+direction, len(focal_points)-1))
+    camera.animate_radius(focal_points[focus][1])
+    return focus
 
 
 def main(path):
@@ -130,6 +146,7 @@ def main(path):
     # Gameloop
     d_time = 1/60
     running = True
+    keys_down = {}
 
     focus = 0
     focal_points = get_focal_points(radial_accumulation(0))
@@ -154,15 +171,27 @@ def main(path):
 
         # Timing
         d_time = t()
+
+        if is_key_held(keys_down, pygame.K_RIGHT, 0.2):
+            keys_down[pygame.K_RIGHT] = time.time()-0.15
+            focus = update_focus(camera, focal_points, focus, 1)
+        if is_key_held(keys_down, pygame.K_LEFT, 0.2):
+            keys_down[pygame.K_LEFT] = time.time()-0.15
+            focus = update_focus(camera, focal_points, focus, -1)
+
         # Events
         for event in pygame.event.get():
+            if event.type == pygame.KEYUP:
+                if event.key in keys_down:
+                    del keys_down[event.key]
             if event.type == pygame.KEYDOWN:
+                # Log keypress times
+                keys_down[event.key] = time.time()
+
                 if event.key == pygame.K_RIGHT:
-                    focus = min(focus+1, len(focal_points)-1)
-                    camera.animate_radius(focal_points[focus][1])
+                    focus = update_focus(camera, focal_points, focus, 1)
                 if event.key == pygame.K_LEFT:
-                    focus = max(0, focus-1)
-                    camera.animate_radius(focal_points[focus][1])
+                    focus = update_focus(camera, focal_points, focus, -1)
             if event.type == pygame.QUIT:
                 running = False
 

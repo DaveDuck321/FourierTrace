@@ -17,7 +17,11 @@ class Circle(Shape):
         c = cam.point_on_surface(cam.get_local(self.center))
         r = int(self.radius/cam.radius * cam._RENDER_RADIUS)
 
-        pygame.gfxdraw.circle(cam._surface, *c, r, self.color)
+        try:
+            pygame.gfxdraw.circle(cam._surface, *c, r, self.color)
+        except OverflowError:
+            # Pygame cannot render shapes outside of screen
+            pass
 
 
 class Line(Shape):
@@ -30,7 +34,11 @@ class Line(Shape):
         local1, local2 = cam.get_local(self.p1), cam.get_local(self.p2)
         p1, p2 = cam.point_on_surface(local1), cam.point_on_surface(local2)
 
-        pygame.gfxdraw.line(cam._surface, *p1, *p2, self.color)
+        try:
+            pygame.gfxdraw.line(cam._surface, *p1, *p2, self.color)
+        except OverflowError:
+            # Pygame cannot render shapes outside of screen
+            pass
 
 
 class Camera():

@@ -51,7 +51,8 @@ def gen_draw_pendulum(lifetime=1):
                 circle_color = (0, 255, 0)
                 line_color = (255, 255, 255)
 
-            camera.add_shape(Circle(circle_color, p, abs(p-c)))
+            if index != 0:
+                camera.add_shape(Circle(circle_color, p, abs(p-c)))
             camera.add_shape(Line(line_color, p, c))
 
         current_t = time.time()
@@ -68,7 +69,7 @@ def gen_draw_pendulum(lifetime=1):
     return draw_pendulum
 
 
-def gen_radial_accumulation(POINTS, n=200):
+def gen_radial_accumulation(POINTS, n=1000):
     """Calculates fourier coefficients and returns an expansion function
     This generate a fourier accumulation at a given angle with 'n' terms
     """

@@ -162,9 +162,11 @@ def save_path(path, size, file_path):
 
 
 if __name__ == "__main__":
-    data = get_image_data(sys.argv[1])
-    fill_image_data(data)
+    full_path = []
+    for path in sys.argv[1:]:
+        data = get_image_data(path)
+        fill_image_data(data)
+        full_path.extend(shortest_path(data))
 
-    path = shortest_path(data)
-    show_path(path, data.size)
-    save_path(path, data.size, "out.p")
+    show_path(full_path, data.size)
+    save_path(full_path, data.size, "out.p")

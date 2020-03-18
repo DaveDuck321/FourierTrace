@@ -1,5 +1,5 @@
-import pygame
-from pygame import gfxdraw # noqa
+def from_rgb(color):
+    return "#%02x%02x%02x" % color[:3]
 
 
 class Shape():
@@ -17,11 +17,7 @@ class Circle(Shape):
         c = cam.point_on_surface(cam.get_local(self.center))
         r = int(self.radius/cam.radius * cam._RENDER_RADIUS)
 
-        try:
-            pygame.gfxdraw.circle(cam._surface, *c, r, self.color)
-        except OverflowError:
-            # Pygame cannot render shapes outside of screen
-            pass
+        cam._surface.create_oval(c[0]-r, c[1]-r, c[0]+r, c[1]+r)
 
 
 class Line(Shape):
@@ -34,11 +30,7 @@ class Line(Shape):
         local1, local2 = cam.get_local(self.p1), cam.get_local(self.p2)
         p1, p2 = cam.point_on_surface(local1), cam.point_on_surface(local2)
 
-        try:
-            pygame.gfxdraw.line(cam._surface, *p1, *p2, self.color)
-        except OverflowError:
-            # Pygame cannot render shapes outside of screen
-            pass
+        cam._surface.create_line(*p1, *p2, fill=from_rgb(self.color))
 
 
 class Camera():

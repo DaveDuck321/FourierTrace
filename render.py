@@ -14,7 +14,7 @@ import time
 import sys
 import pickle
 
-import pygame
+import tkinter as tk
 
 RENDER_RADIUS = 512
 
@@ -48,8 +48,8 @@ def gen_draw_pendulum(lifetime=1):
             line_color = (255, 255, 255, 50)
 
             if index == focus:
-                circle_color = (0, 255, 0)
-                line_color = (255, 255, 255)
+                circle_color = (0, 255, 0, 255)
+                line_color = (255, 255, 255, 255)
 
             if index != 0:
                 camera.add_shape(Circle(circle_color, p, abs(p-c)))
@@ -69,7 +69,7 @@ def gen_draw_pendulum(lifetime=1):
     return draw_pendulum
 
 
-def gen_radial_accumulation(POINTS, n=1000):
+def gen_radial_accumulation(POINTS, n=800):
     """Calculates fourier coefficients and returns an expansion function
     This generate a fourier accumulation at a given angle with 'n' terms
     """
@@ -136,11 +136,16 @@ def update_focus(camera, focal_points, focus, direction):
 
 def main(path):
     # Init
-    pygame.init()
-    screen = pygame.display.set_mode((RENDER_RADIUS*2, RENDER_RADIUS*2))
-    camera = Camera(screen, RENDER_RADIUS, 2)
+    master = tk.Tk()
+    canvas = tk.Canvas(
+        master,
+        width=RENDER_RADIUS*2,
+        height=RENDER_RADIUS*2
+    )
+    canvas.pack()
+    camera = Camera(canvas, RENDER_RADIUS, 2)
 
-    draw_pendulum = gen_draw_pendulum(60)
+    draw_pendulum = gen_draw_pendulum(1000000)
     radial_accumulation = gen_radial_accumulation(path)
 
     # Gameloop
@@ -160,18 +165,20 @@ def main(path):
         accumulation = radial_accumulation(rotation)
 
         # Drawing
-        screen.fill((0, 0, 0))
+        canvas.delete(tk.ALL)
         draw_pendulum(camera, accumulation, focal_points[focus][0])
 
         camera.center = accumulation[focal_points[focus][0]]
 
         camera.tick(d_time)
         camera.flush()
-        pygame.display.flip()
 
         # Timing
         d_time = t()
+        master.update_idletasks()
+        master.update()
 
+        """
         if is_key_held(keys_down, pygame.K_RIGHT, 0.2):
             keys_down[pygame.K_RIGHT] = time.time()-0.15
             focus = update_focus(camera, focal_points, focus, 1)
@@ -194,7 +201,7 @@ def main(path):
                     focus = update_focus(camera, focal_points, focus, -1)
             if event.type == pygame.QUIT:
                 running = False
-
+"""
 
 if __name__ == "__main__":
     with open(sys.argv[1], 'rb') as file:
